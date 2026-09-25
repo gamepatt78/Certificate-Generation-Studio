@@ -1,0 +1,27 @@
+# Tasks - Ston Technology Document Generator
+
+- `[x]` Create folder structure under `cert generator/`
+- `[x]` Initialize and set up the Express.js Backend (`server/`)
+  - `[x]` Install dependencies (`express`, `cors`, `sqlite3`, `pdf-lib`, `multer`, `qrcode`, `csv-parser`)
+  - `[x]` Implement `db.js` (SQLite initialization, settings, records, audit logs tables)
+  - `[x]` Implement `templateConfig.js` with hardcoded coordinate mappings
+  - `[x]` Copy initial templates to `templates/` and rename them appropriately
+  - `[x]` Implement `pdfGenerator.js` (vector-PDF overlay, text, image, QR code, draft watermark)
+  - `[x]` Implement `backupService.js` (daily auto database backups)
+  - `[x]` Create Express entrypoint `server.js` with API endpoints
+- `[x]` Initialize and set up the React + Vite Frontend (`client/`)
+  - `[x]` Create client app via Vite
+  - `[x]` Install frontend packages (`lucide-react`, `react-hook-form`, `zod`, `@hookform/resolvers`)
+  - `[x]` Set up Tailwind CSS configuration and dark/light styling system
+  - `[x]` Create theme provider for dark/light mode toggle
+- `[x]` Implement Frontend Views & Components
+  - `[x]` Shared Navigation Bar and Layout (premium glassmorphic UI)
+  - `[x]` Dashboard (search index, filter records, download, edit/regenerate, reprint, stats cards)
+  - `[x]` Document Generator Form & Live Side-by-Side Preview (debounced iframe PDF render)
+  - `[x]` Admin Settings (manage profile, watermark toggle, CEO signature, logo uploads, audit logs, backup buttons)
+  - `[x]` Public Verification Portal (`/verify/:id`)
+  - `[x]` Bulk CSV Import & Generator Page
+- `[x]` Verification & Testing
+  - `[x]` Write verification script `server/test-pdf.js`
+  - `[x]` Execute manual testing of full-stack flows
+  - `[x]` Generate final Walkthrough artifact

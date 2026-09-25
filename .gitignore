@@ -1,0 +1,38 @@
+# Node dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build outputs
+client/dist/
+dist/
+
+# Environment and sensitive data
+.env
+.env.local
+*.log
+
+# Generated test PDFs (preserve directories)
+generated/offer-letters/*.pdf
+generated/certificates/*.pdf
+!generated/offer-letters/.gitkeep
+!generated/certificates/.gitkeep
+
+# Uploads
+uploads/temp/*
+uploads/logos/*
+uploads/signatures/*
+uploads/fonts/*
+!uploads/logos/.gitkeep
+!uploads/signatures/.gitkeep
+!uploads/fonts/.gitkeep
+!uploads/temp/.gitkeep
+
+# Templates
+templates/*.pdf
+templates/*.png
+!templates/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
