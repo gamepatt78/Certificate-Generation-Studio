@@ -63,7 +63,7 @@ export default function Verify({ initialId }) {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-              Certificate Generation Studio
+              Ston Technology
             </h1>
             <p className="text-xs uppercase font-extrabold tracking-widest text-blue-600 dark:text-blue-400 mt-0.5">
               Credential Verification Portal
@@ -122,7 +122,7 @@ export default function Verify({ initialId }) {
                     Verified Credential Found
                   </h3>
                   <p className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider mt-0.5">
-                    Certificate Generation Studio Registry Record
+                    Ston Technology Registry Record
                   </p>
                 </div>
               </div>

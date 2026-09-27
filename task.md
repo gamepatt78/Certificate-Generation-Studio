@@ -1,4 +1,4 @@
-# Tasks - Certificate Generation Studio
+# Tasks - Ston Technology Document Generator
 
 - `[x]` Create folder structure under `cert generator/`
 - `[x]` Initialize and set up the Express.js Backend (`server/`)
