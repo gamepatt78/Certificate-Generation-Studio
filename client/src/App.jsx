@@ -84,7 +84,7 @@ export default function App() {
           </main>
 
           <footer className="py-2 border-t border-slate-200/50 dark:border-slate-850/50 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-            &copy; {new Date().getFullYear()} Ston Technology Document Generator. All rights reserved.
+            &copy; {new Date().getFullYear()} Certificate Generation Studio. All rights reserved.
           </footer>
         </div>
       </ToastProvider>

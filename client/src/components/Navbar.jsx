@@ -19,8 +19,8 @@ export default function Navbar({ activeTab, setActiveTab }) {
           <Award className="w-5.5 h-5.5 text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-800 dark:text-white font-sans bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-            Ston Technology
+          <h1 className="max-w-[14rem] text-sm lg:text-base leading-tight font-bold tracking-tight text-slate-800 dark:text-white font-sans bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
+            Certificate Generation Studio
           </h1>
           <p className="text-[10px] font-medium tracking-widest text-blue-600 dark:text-blue-400 uppercase">
             Doc Generator
