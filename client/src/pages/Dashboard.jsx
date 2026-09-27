@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { Search, Download, Edit3, ArrowRight, RefreshCw, FileText, Award, Calendar, Users, Eye, HelpCircle } from 'lucide-react';
+import { apiUrl } from '../api';
 
 export default function Dashboard({ setActiveTab, setEditingRecord }) {
   const toast = useToast();
@@ -14,6 +15,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
   });
   
   const [loading, setLoading] = useState(true);
+  const [statsUnavailable, setStatsUnavailable] = useState(false);
   const [search, setSearch] = useState('');
   const [docTypeFilter, setDocTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -35,13 +37,17 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/records/stats');
+      const response = await fetch(apiUrl('/api/records/stats'));
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+        setStatsUnavailable(false);
+      } else {
+        setStatsUnavailable(true);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setStatsUnavailable(true);
     }
   };
 
@@ -56,7 +62,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
         limit: '10'
       });
 
-      const response = await fetch(`http://localhost:5000/api/records?${params.toString()}`);
+      const response = await fetch(apiUrl(`/api/records?${params.toString()}`));
       if (response.ok) {
         const data = await response.json();
         setRecords(data.records);
@@ -132,7 +138,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
           </div>
           <div>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Total Generated</p>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{stats.total}</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{statsUnavailable ? 'Unavailable' : stats.total}</h3>
           </div>
         </div>
 
@@ -142,7 +148,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
           </div>
           <div>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Active Interns</p>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{stats.active}</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{statsUnavailable ? 'Unavailable' : stats.active}</h3>
           </div>
         </div>
 
@@ -152,7 +158,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
           </div>
           <div>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Certificates</p>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{stats.certificates}</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{statsUnavailable ? 'Unavailable' : stats.certificates}</h3>
           </div>
         </div>
 
@@ -162,7 +168,7 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
           </div>
           <div>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Offer Letters</p>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{stats.offerLetters}</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">{statsUnavailable ? 'Unavailable' : stats.offerLetters}</h3>
           </div>
         </div>
       </div>
@@ -315,24 +321,14 @@ export default function Dashboard({ setActiveTab, setEditingRecord }) {
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
-                        {record.offer_letter_url && (
-                          <button
-                            onClick={() => window.open(record.offer_letter_url, '_blank')}
-                            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-600 dark:hover:text-slate-200 cursor-pointer"
-                            title="View/Download Offer Letter"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                        )}
-                        {record.certificate_url && (
-                          <button
-                            onClick={() => window.open(record.certificate_url, '_blank')}
-                            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 dark:hover:text-slate-200 cursor-pointer"
-                            title="View/Download Certificate"
-                          >
-                            <Award className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => window.open(apiUrl(`/api/records/${record.id}/download`), '_blank', 'noopener,noreferrer')}
+                          className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-600 dark:hover:text-slate-200 cursor-pointer"
+                          title="Download PDF"
+                          aria-label={`Download PDF for ${record.full_name}`}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

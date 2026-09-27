@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -9,6 +10,7 @@ import XLSX from 'xlsx';
 import {
   initDB,
   getSettings,
+  get,
   updateSettings,
   getNextInternId,
   incrementInternId,
@@ -170,10 +172,13 @@ app.post('/api/settings/upload', upload.fields([
 // 2. Live Preview Generation (Generates PDF without DB changes or ID increments)
 app.post('/api/generate/preview', async (req, res) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'A JSON object is required' });
+    }
     const { documentType, ...formData } = req.body;
-    
-    if (!documentType) {
-      return res.status(400).json({ error: 'documentType is required' });
+
+    if (!['offer_letter', 'certificate'].includes(documentType)) {
+      return res.status(400).json({ error: 'A valid documentType is required' });
     }
 
     // Mock an ID for preview purposes
@@ -194,9 +199,37 @@ app.post('/api/generate/preview', async (req, res) => {
 app.post('/api/generate', async (req, res) => {
   try {
     const formData = req.body;
+    if (!formData || typeof formData !== 'object' || Array.isArray(formData)) {
+      return res.status(400).json({ error: 'A JSON object is required' });
+    }
+
+    const { documentType } = formData;
+    if (!['offer_letter', 'certificate'].includes(documentType)) {
+      return res.status(400).json({ error: 'A valid documentType is required' });
+    }
+
+    const requiredFields = ['fullName', 'role', 'department', 'startDate', 'duration', 'documentDate'];
+    if (documentType === 'certificate') {
+      requiredFields.push('performanceGrade', 'achievementDescription');
+    }
+    const missingFields = requiredFields.filter((field) => (
+      typeof formData[field] !== 'string' || !formData[field].trim()
+    ));
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+    if (formData.fullName.trim().length < 2 || formData.role.trim().length < 2) {
+      return res.status(400).json({ error: 'fullName and role must be at least 2 characters' });
+    }
+    if (documentType === 'certificate' && formData.achievementDescription.trim().length < 10) {
+      return res.status(400).json({ error: 'achievementDescription must be at least 10 characters' });
+    }
+    if (formData.internshipType && !['Paid', 'Unpaid'].includes(formData.internshipType)) {
+      return res.status(400).json({ error: 'internshipType must be Paid or Unpaid' });
+    }
 
     // Duplicate Warn override check
-    const bypassDuplicate = req.body.bypassDuplicate === true;
+    const bypassDuplicate = formData.bypassDuplicate === true;
     if (!bypassDuplicate) {
       const duplicate = await checkDuplicate(formData.fullName, formData.role);
       if (duplicate) {
@@ -211,71 +244,46 @@ app.post('/api/generate', async (req, res) => {
     const internId = await incrementInternId();
     formData.internId = internId;
 
-    // --- Generate Offer Letter ---
-    const offerPdfBuffer = await generatePDF(formData, 'offer_letter', false);
-    const offerFilename = `INTERN-${internId}.pdf`;
-    const offerRelativePath = `generated/offer-letters/${offerFilename}`;
-    const offerAbsolutePath = path.join(projectRootDir, offerRelativePath);
-    fs.writeFileSync(offerAbsolutePath, offerPdfBuffer);
+    const prefix = documentType === 'offer_letter' ? 'INTERN' : 'CERT';
+    const folder = documentType === 'offer_letter' ? 'offer-letters' : 'certificates';
+    const pdfBuffer = await generatePDF(formData, documentType, false);
+    const relativePath = `generated/${folder}/${prefix}-${internId}.pdf`;
+    fs.writeFileSync(path.join(projectRootDir, relativePath), pdfBuffer);
+    const cloudinaryUrl = await cloudinaryService.uploadPdfBuffer(pdfBuffer);
 
-    const offerCloudinaryUrl = await cloudinaryService.uploadPdfBuffer(offerPdfBuffer);
+    const additionalDetails = documentType === 'offer_letter'
+      ? {
+          internshipType: formData.internshipType || 'Unpaid',
+          additionalNotes: formData.additionalNotes || '',
+          cloudinaryUrl
+        }
+      : {
+          performanceGrade: formData.performanceGrade,
+          achievementDescription: formData.achievementDescription,
+          cloudinaryUrl
+        };
 
-    const offerAdditionalDetails = {
-      internshipType: formData.internshipType || 'Unpaid',
-      additionalNotes: formData.additionalNotes || '',
-      cloudinaryUrl: offerCloudinaryUrl
-    };
-
-    const offerRecordId = await addRecord({
+    const recordId = await addRecord({
       intern_id: internId,
       full_name: formData.fullName,
       role: formData.role,
       department: formData.department || '',
-      document_type: 'offer_letter',
+      document_type: documentType,
       duration: formData.duration,
       document_date: formData.documentDate,
-      pdf_location: offerRelativePath,
-      offer_letter_pdf: offerCloudinaryUrl,
-      status: 'Active',
-      additional_details: JSON.stringify(offerAdditionalDetails)
-    });
-
-    // --- Generate Certificate ---
-    const certPdfBuffer = await generatePDF(formData, 'certificate', false);
-    const certFilename = `CERT-${internId}.pdf`;
-    const certRelativePath = `generated/certificates/${certFilename}`;
-    const certAbsolutePath = path.join(projectRootDir, certRelativePath);
-    fs.writeFileSync(certAbsolutePath, certPdfBuffer);
-
-    const certCloudinaryUrl = await cloudinaryService.uploadPdfBuffer(certPdfBuffer);
-
-    const certAdditionalDetails = {
-      performanceGrade: formData.performanceGrade || '',
-      achievementDescription: formData.achievementDescription || '',
-      cloudinaryUrl: certCloudinaryUrl
-    };
-
-    const certRecordId = await addRecord({
-      intern_id: internId,
-      full_name: formData.fullName,
-      role: formData.role,
-      department: formData.department || '',
-      document_type: 'certificate',
-      duration: formData.duration,
-      document_date: formData.documentDate,
-      pdf_location: certRelativePath,
-      certificate_pdf: certCloudinaryUrl,
-      status: 'Completed',
-      additional_details: JSON.stringify(certAdditionalDetails)
+      pdf_location: relativePath,
+      offer_letter_pdf: documentType === 'offer_letter' ? cloudinaryUrl : null,
+      certificate_pdf: documentType === 'certificate' ? cloudinaryUrl : null,
+      status: documentType === 'certificate' ? 'Completed' : 'Active',
+      additional_details: JSON.stringify(additionalDetails)
     });
 
     res.json({
       success: true,
       internId,
-      offerRecordId,
-      certRecordId,
-      offerUrl: `/${offerRelativePath}`,
-      certUrl: `/${certRelativePath}`
+      recordId,
+      documentType,
+      pdfUrl: `/${relativePath}`
     });
   } catch (error) {
     console.error('Generate PDF error:', error);
@@ -314,11 +322,9 @@ app.get('/api/records', async (req, res) => {
 // Dashboard stats endpoint
 app.get('/api/records/stats', async (req, res) => {
   try {
-    const stats = {};
     const settings = await getSettings();
     
     // Quick count aggregates
-    const db = await getSettings(); // settings check
     const totalCount = await get('SELECT COUNT(*) as count FROM intern_records');
     const offerLetterCount = await get('SELECT COUNT(*) as count FROM intern_records WHERE document_type = "offer_letter"');
     const certCount = await get('SELECT COUNT(*) as count FROM intern_records WHERE document_type = "certificate"');

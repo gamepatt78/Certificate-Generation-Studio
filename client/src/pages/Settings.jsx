@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
-import { Save, Upload, Database, Scroll, ToggleLeft, ToggleRight, CheckCircle, FileText, UploadCloud, ShieldAlert, Award } from 'lucide-react';
+import { Save, Upload, Database, Scroll, ToggleLeft, ToggleRight, CheckCircle, FileText, UploadCloud, ShieldAlert, Award, RefreshCw } from 'lucide-react';
+import { apiUrl } from '../api';
 
 export default function Settings() {
   const toast = useToast();
@@ -32,7 +33,7 @@ export default function Settings() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/settings');
+      const response = await fetch(apiUrl('/api/settings'));
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -49,7 +50,7 @@ export default function Settings() {
 
   const fetchAuditLogs = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/audit-logs');
+      const response = await fetch(apiUrl('/api/audit-logs'));
       if (response.ok) {
         const data = await response.json();
         setAuditLogs(data);
@@ -71,7 +72,7 @@ export default function Settings() {
     const newVal = settings.enable_draft_watermark === 1 ? 0 : 1;
     setSettings((prev) => ({ ...prev, enable_draft_watermark: newVal }));
     try {
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch(apiUrl('/api/settings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enable_draft_watermark: newVal })
@@ -94,7 +95,7 @@ export default function Settings() {
     e.preventDefault();
     setSaveLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch(apiUrl('/api/settings'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,7 +134,7 @@ export default function Settings() {
         formData.append(key, val);
       });
 
-      const response = await fetch('http://localhost:5000/api/settings/upload', {
+      const response = await fetch(apiUrl('/api/settings/upload'), {
         method: 'POST',
         body: formData
       });
@@ -162,7 +163,7 @@ export default function Settings() {
     setBackupLoading(true);
     toast.info('Initiating database backup...');
     try {
-      const response = await fetch('http://localhost:5000/api/backup', { method: 'POST' });
+      const response = await fetch(apiUrl('/api/backup'), { method: 'POST' });
       if (response.ok) {
         const data = await response.json();
         toast.success(`Backup saved successfully as ${data.file}!`);

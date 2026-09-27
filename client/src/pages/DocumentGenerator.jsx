@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '../context/ToastContext';
 import { FileText, Download, Save, RefreshCw, AlertTriangle, Eye, ArrowLeft } from 'lucide-react';
+import { apiUrl } from '../api';
 
-// Zod schemas for validation
-const unifiedSchema = z.zod ? z.object({
+const createSchema = (type) => z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   role: z.string().min(2, 'Role must be at least 2 characters'),
   department: z.string().min(1, 'Department is required'),
@@ -14,27 +14,18 @@ const unifiedSchema = z.zod ? z.object({
   duration: z.string().min(1, 'Duration is required'),
   documentDate: z.string().min(1, 'Document Date is required'),
   internshipType: z.enum(['Paid', 'Unpaid']),
-  performanceGrade: z.string().min(1, 'Performance Grade is required'),
-  achievementDescription: z.string().min(10, 'Achievement Description must be at least 10 characters'),
+  performanceGrade: type === 'certificate'
+    ? z.string().min(1, 'Performance Grade is required')
+    : z.string().optional(),
+  achievementDescription: type === 'certificate'
+    ? z.string().min(10, 'Achievement Description must be at least 10 characters')
+    : z.string().optional(),
   companyName: z.string().default('Ston Technology'),
   additionalNotes: z.string().optional(),
-}) : null;
+});
 
 export default function DocumentGenerator({ type, editingRecord, clearEditing, setActiveTab }) {
-  // If zod is not defined (since we imported * as z), let's fallback to creating them manually:
-  const schema = unifiedSchema || z.object({
-    fullName: z.string().min(2, 'Name must be at least 2 characters'),
-    role: z.string().min(2, 'Role must be at least 2 characters'),
-    department: z.string().min(1, 'Department is required'),
-    startDate: z.string().min(1, 'Start date is required'),
-    duration: z.string().min(1, 'Duration is required'),
-    documentDate: z.string().min(1, 'Date is required'),
-    internshipType: z.enum(['Paid', 'Unpaid']),
-    performanceGrade: z.string().min(1, 'Performance grade is required'),
-    achievementDescription: z.string().min(10, 'Achievement description must be at least 10 characters'),
-    companyName: z.string().default('Ston Technology'),
-    additionalNotes: z.string().optional(),
-  });
+  const schema = createSchema(type);
 
   const toast = useToast();
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -158,7 +149,7 @@ export default function DocumentGenerator({ type, editingRecord, clearEditing, s
         documentDate: formatDateProfessionally(watchedValues.documentDate)
       };
 
-      const response = await fetch('http://localhost:5000/api/generate/preview', {
+      const response = await fetch(apiUrl('/api/generate/preview'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -185,7 +176,7 @@ export default function DocumentGenerator({ type, editingRecord, clearEditing, s
     if (!editingRecord) {
       try {
         const params = new URLSearchParams({ name: data.fullName, role: data.role });
-        const res = await fetch(`http://localhost:5000/api/records/check-duplicate?${params.toString()}`);
+        const res = await fetch(apiUrl(`/api/records/check-duplicate?${params.toString()}`));
         const dupResult = await res.json();
         
         if (dupResult.duplicate) {
@@ -216,14 +207,14 @@ export default function DocumentGenerator({ type, editingRecord, clearEditing, s
       let response;
       if (editingRecord) {
         // Regenerating existing record
-        response = await fetch(`http://localhost:5000/api/records/${editingRecord.id}/regenerate`, {
+        response = await fetch(apiUrl(`/api/records/${editingRecord.id}/regenerate`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
         // Generating new record
-        response = await fetch('http://localhost:5000/api/generate', {
+        response = await fetch(apiUrl('/api/generate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -236,22 +227,15 @@ export default function DocumentGenerator({ type, editingRecord, clearEditing, s
         if (editingRecord) {
           toast.success('Record regenerated successfully!');
           // Trigger download for regenerated record
-          window.open(`http://localhost:5000/api/records/${result.recordId}/download`, '_blank');
+          window.open(apiUrl(`/api/records/${result.recordId}/download`), '_blank');
         } else {
           toast.success(
             <span className="flex flex-col gap-1">
-              <span className="font-bold">Records created and PDFs generated!</span>
-              <span className="flex gap-3 text-xs mt-1">
-                {result.offerUrl && (
-                  <a href={`http://localhost:5000${result.offerUrl}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
-                    View Offer Letter
-                  </a>
-                )}
-                {result.certUrl && (
-                  <a href={`http://localhost:5000${result.certUrl}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
-                    View Certificate
-                  </a>
-                )}
+              <span className="font-bold">{type === 'offer_letter' ? 'Offer letter' : 'Certificate'} generated successfully!</span>
+              <span className="text-xs mt-1">
+                <a href={apiUrl(result.pdfUrl)} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
+                  View generated PDF
+                </a>
               </span>
             </span>,
             8000 // duration 8s to give user time to click
@@ -428,35 +412,39 @@ export default function DocumentGenerator({ type, editingRecord, clearEditing, s
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Performance Grade
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Outstanding / A+ / Excellent"
-                {...register('performanceGrade')}
-                className={`w-full px-4 py-1.5 rounded-lg border bg-white dark:bg-slate-950/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white ${
-                  errors.performanceGrade ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
-                }`}
-              />
-              {errors.performanceGrade && <p className="text-rose-500 text-xs mt-1.5 font-medium">{errors.performanceGrade.message}</p>}
-            </div>
+            {type === 'certificate' && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Performance Grade
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Outstanding / A+ / Excellent"
+                    {...register('performanceGrade')}
+                    className={`w-full px-4 py-1.5 rounded-lg border bg-white dark:bg-slate-950/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white ${
+                      errors.performanceGrade ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                    }`}
+                  />
+                  {errors.performanceGrade && <p className="text-rose-500 text-xs mt-1.5 font-medium">{errors.performanceGrade.message}</p>}
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Achievement Description
-              </label>
-              <textarea
-                rows="3"
-                placeholder="e.g. for their outstanding contribution to designing and deploying the core backend services, and demonstrating exceptional problem-solving skills..."
-                {...register('achievementDescription')}
-                className={`w-full px-4 py-1.5 rounded-lg border bg-white dark:bg-slate-950/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none ${
-                  errors.achievementDescription ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
-                }`}
-              />
-              {errors.achievementDescription && <p className="text-rose-500 text-xs mt-1.5 font-medium">{errors.achievementDescription.message}</p>}
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Achievement Description
+                  </label>
+                  <textarea
+                    rows="3"
+                    placeholder="e.g. for their outstanding contribution to designing and deploying the core backend services, and demonstrating exceptional problem-solving skills..."
+                    {...register('achievementDescription')}
+                    className={`w-full px-4 py-1.5 rounded-lg border bg-white dark:bg-slate-950/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none ${
+                      errors.achievementDescription ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                    }`}
+                  />
+                  {errors.achievementDescription && <p className="text-rose-500 text-xs mt-1.5 font-medium">{errors.achievementDescription.message}</p>}
+                </div>
+              </>
+            )}
 
             <div className="pt-1 border-t border-slate-100 dark:border-slate-800/80 flex gap-3">
               <button

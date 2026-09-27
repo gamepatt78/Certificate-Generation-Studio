@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Award, CheckCircle, ShieldAlert, Search, Calendar, User, Briefcase, FileText, Check } from 'lucide-react';
+import { apiUrl } from '../api';
 
 export default function Verify({ initialId }) {
   const [internId, setInternId] = useState(initialId || '');
@@ -29,7 +30,7 @@ export default function Verify({ initialId }) {
     setSearched(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/verify/${id}`);
+      const response = await fetch(apiUrl(`/api/verify/${id}`));
       if (response.ok) {
         const data = await response.json();
         setVerifiedData(data);

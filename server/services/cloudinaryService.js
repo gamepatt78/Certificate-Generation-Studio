@@ -1,4 +1,6 @@
-const cloudinary = require('cloudinary').v2;
+import cloudinaryPackage from 'cloudinary';
+
+const cloudinary = cloudinaryPackage.v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,6 +14,10 @@ cloudinary.config({
  * @returns {Promise<string>} The secure URL of the uploaded PDF.
  */
 const uploadPdfBuffer = (buffer) => {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    return Promise.resolve(null);
+  }
+
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -22,7 +28,7 @@ const uploadPdfBuffer = (buffer) => {
         if (error) {
           return reject(error);
         }
-        resolve(result.secure_url);
+        resolve(result?.secure_url || null);
       }
     );
 
@@ -30,6 +36,6 @@ const uploadPdfBuffer = (buffer) => {
   });
 };
 
-module.exports = {
+export default {
   uploadPdfBuffer,
 };

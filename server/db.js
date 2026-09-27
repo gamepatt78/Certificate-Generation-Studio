@@ -6,13 +6,15 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbDir = path.resolve(__dirname, '../database');
+const defaultDbDir = path.resolve(__dirname, '../database');
+const dbPath = path.resolve(process.env.DATABASE_PATH || path.join(defaultDbDir, 'database.sqlite'));
+const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const dbPath = path.join(dbDir, 'database.sqlite');
 const db = new sqlite3.Database(dbPath);
+export const databasePath = dbPath;
 
 // Helper to run query with promise
 export const run = (sql, params = []) => {
@@ -44,6 +46,15 @@ export const all = (sql, params = []) => {
   });
 };
 
+const ensureColumns = async (table, columns) => {
+  const existingColumns = new Set((await all(`PRAGMA table_info(${table})`)).map(({ name }) => name));
+  for (const [column, type] of Object.entries(columns)) {
+    if (!existingColumns.has(column)) {
+      await run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
+  }
+};
+
 // Initialize DB schema
 export const initDB = async () => {
   // Settings Table
@@ -59,9 +70,16 @@ export const initDB = async () => {
       company_logo_path TEXT,
       next_intern_id INTEGER DEFAULT 2001,
       enable_draft_watermark INTEGER DEFAULT 0,
-      verification_base_url TEXT DEFAULT 'http://localhost:5173/verify'
+      verification_base_url TEXT DEFAULT 'http://localhost:5173/verify',
+      offer_letter_template TEXT,
+      certificate_template TEXT
     )
   `);
+
+  await ensureColumns('settings', {
+    offer_letter_template: 'TEXT',
+    certificate_template: 'TEXT'
+  });
 
   // Intern Records Table
   await run(`
@@ -74,6 +92,7 @@ export const initDB = async () => {
       document_type TEXT NOT NULL, -- 'offer_letter' | 'certificate'
       duration TEXT NOT NULL,
       document_date TEXT NOT NULL,
+      pdf_location TEXT NOT NULL,
       offer_letter_pdf TEXT,
       certificate_pdf TEXT,
       status TEXT DEFAULT 'Active', -- 'Active' | 'Completed' | 'Revoked'
@@ -81,6 +100,12 @@ export const initDB = async () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await ensureColumns('intern_records', {
+    pdf_location: 'TEXT',
+    offer_letter_pdf: 'TEXT',
+    certificate_pdf: 'TEXT'
+  });
 
   // Audit Logs Table
   await run(`
@@ -139,6 +164,8 @@ export const updateSettings = async (settings) => {
     'company_phone',
     'ceo_signature_path',
     'company_logo_path',
+    'offer_letter_template',
+    'certificate_template',
     'next_intern_id',
     'enable_draft_watermark',
     'verification_base_url'
@@ -183,6 +210,7 @@ export const addRecord = async (record) => {
     document_type,
     duration,
     document_date,
+    pdf_location,
     offer_letter_pdf,
     certificate_pdf,
     status = 'Active',
@@ -191,8 +219,8 @@ export const addRecord = async (record) => {
 
   const result = await run(
     `INSERT INTO intern_records 
-     (intern_id, full_name, role, department, document_type, duration, document_date, offer_letter_pdf, certificate_pdf, status, additional_details) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    (intern_id, full_name, role, department, document_type, duration, document_date, pdf_location, offer_letter_pdf, certificate_pdf, status, additional_details)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       intern_id,
       full_name,
@@ -201,6 +229,7 @@ export const addRecord = async (record) => {
       document_type,
       duration,
       document_date,
+      pdf_location,
       offer_letter_pdf,
       certificate_pdf,
       status,

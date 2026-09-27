@@ -42,6 +42,60 @@ const getFont = async (pdfDoc, fontName, uploadsDir) => {
   return await pdfDoc.embedFont(StandardFonts.Helvetica);
 };
 
+const drawDefaultTemplate = async (pdfDoc, docType, companyName, config) => {
+  const width = config.defaultWidth;
+  const height = config.defaultHeight;
+  const page = pdfDoc.addPage([width, height]);
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const blue = rgb(0.12, 0.32, 0.62);
+  const ink = rgb(0.12, 0.17, 0.24);
+  const muted = rgb(0.38, 0.43, 0.5);
+
+  page.drawRectangle({ x: 0, y: height - 14, width, height: 14, color: blue });
+  page.drawRectangle({
+    x: 24,
+    y: 24,
+    width: width - 48,
+    height: height - 48,
+    borderColor: blue,
+    borderWidth: 1
+  });
+  page.drawText(companyName, { x: 46, y: height - 54, size: 15, font: bold, color: ink });
+  page.drawText('Official internship document', { x: 46, y: height - 72, size: 8, font: regular, color: muted });
+
+  if (docType === 'offer_letter') {
+    page.drawText('INTERNSHIP OFFER LETTER', { x: 46, y: height - 132, size: 20, font: bold, color: blue });
+    page.drawText('Dear', { x: 46, y: height * 0.706, size: 11, font: regular, color: ink });
+    page.drawText('We are pleased to offer you an internship with our company.', {
+      x: 46, y: height * 0.66, size: 10, font: regular, color: ink
+    });
+    page.drawText('Position and start date', { x: 46, y: height * 0.60, size: 9, font: bold, color: muted });
+    page.drawText('Internship type and duration', { x: 46, y: height * 0.48, size: 9, font: bold, color: muted });
+    page.drawText('We look forward to working with you.', { x: 46, y: height * 0.35, size: 10, font: regular, color: ink });
+  } else {
+    const title = 'CERTIFICATE OF COMPLETION';
+    const titleWidth = bold.widthOfTextAtSize(title, 22);
+    page.drawText(title, { x: (width - titleWidth) / 2, y: height - 112, size: 22, font: bold, color: blue });
+    const subtitle = 'This certificate is presented to';
+    const subtitleWidth = regular.widthOfTextAtSize(subtitle, 12);
+    page.drawText(subtitle, { x: (width - subtitleWidth) / 2, y: height * 0.62, size: 12, font: regular, color: muted });
+    page.drawText('for completing an internship as', { x: 46, y: height * 0.405, size: 10, font: regular, color: ink });
+    page.drawText('Scan to verify', { x: width * 0.77, y: height * 0.12, size: 8, font: regular, color: muted });
+  }
+
+  return { page, width, height };
+};
+
+export const durationToDays = (duration) => {
+  const match = String(duration ?? '').trim().match(/^(\d+(?:\.\d+)?)\s*(days?|weeks?|months?|years?)?$/i);
+  if (!match) return duration;
+
+  const unit = (match[2] || 'month').toLowerCase().replace(/s$/, '');
+  const daysPerUnit = { day: 1, week: 7, month: 30, year: 365 };
+  return Math.round(Number(match[1]) * daysPerUnit[unit]);
+};
+
 /**
  * Main PDF Generation Function
  * @param {Object} data Intern form values
@@ -69,7 +123,8 @@ export const generatePDF = async (data, docType, isPreview = false) => {
     ? path.resolve(projectRootDir, customTemplatePath)
     : path.resolve(projectRootDir, config.templatePath);
 
-  if (!fs.existsSync(templatePath)) {
+  const hasTemplate = fs.existsSync(templatePath);
+  if (!hasTemplate && customTemplatePath) {
     throw new Error(`Template file not found at: ${templatePath}`);
   }
 
@@ -80,7 +135,10 @@ export const generatePDF = async (data, docType, isPreview = false) => {
   const fileExt = path.extname(templatePath).toLowerCase();
 
   // 1. Initialize PDF Document
-  if (fileExt === '.pdf') {
+  if (!hasTemplate) {
+    pdfDoc = await PDFDocument.create();
+    ({ page, width, height } = await drawDefaultTemplate(pdfDoc, docType, settings.company_name, config));
+  } else if (fileExt === '.pdf') {
     const templateBytes = fs.readFileSync(templatePath);
     const externalDoc = await PDFDocument.load(templateBytes);
     pdfDoc = await PDFDocument.create();
@@ -131,7 +189,7 @@ export const generatePDF = async (data, docType, isPreview = false) => {
 
   // Convert duration from months to days exclusively for Certificate
   if (docType === 'certificate' && values.duration) {
-    values.duration = (Number(values.duration) || 0) * 30;
+    values.duration = durationToDays(values.duration);
   }
 
   // Ensure formatted Intern ID is ready
