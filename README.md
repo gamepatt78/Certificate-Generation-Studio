@@ -1,19 +1,21 @@
 # STON Technology Document Generator
 
-A local web application for generating internship offer letters and completion certificates, managing records, and verifying certificates. The frontend is React/Vite; the API is Express with SQLite and `pdf-lib`.
+Create internship offer letters and completion certificates, manage generated records, and verify credentials.
 
-## Assessment Repository
+**Stack:** React · Vite · Express · SQLite
 
-The assessment PDF names `https://github.com/SyedSameer24/Certificate-Generation-Studio` as its starting repository. This checkout's `origin` is `https://github.com/gamepatt78/Certificate-Generation-Studio.git`, as supplied for cloning. Confirm that this is the intended fork before submitting; no remote was changed or pushed during this work.
+## Features
 
-## Requirements
+- Separate flows for offer letters and completion certificates
+- Live document preview and sequential record IDs
+- Searchable dashboard, record downloads, and public credential verification
+- Company settings, custom assets, audit history, and database backups
 
-- Node.js 20.19+ (or 22.12+)
-- npm
+## Quick Start
 
-## Run Locally
+Use two terminals from the repository root.
 
-Install and start the API in one terminal:
+**1. Start the API**
 
 ```powershell
 cd server
@@ -21,7 +23,7 @@ npm ci
 npm run dev
 ```
 
-Install and start the client in a second terminal:
+**2. Start the client**
 
 ```powershell
 cd client
@@ -29,45 +31,41 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite, usually `http://localhost:5173`. The API listens on port 5000 by default. The Vite development server proxies `/api`, `/generated`, and `/uploads` to the API.
+Open the URL printed by Vite, usually `http://localhost:5173`. The API listens on port `5000` by default. During development, Vite proxies API and generated-asset requests to the API server.
 
 ## Configuration
 
-The API reads these optional environment variables:
+All environment variables are optional.
 
-- `PORT`: API port; defaults to `5000`.
-- `DATABASE_PATH`: SQLite database file; defaults to `database/database.sqlite`.
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: enable remote PDF uploads. Without these values, generated PDFs are saved locally and remain downloadable.
+| Variable | Used by | Default | Purpose |
+|---|---|---|---|
+| `PORT` | API | `5000` | API listening port |
+| `DATABASE_PATH` | API | `database/database.sqlite` | SQLite database location |
+| `CLOUDINARY_CLOUD_NAME` | API | unset | Cloudinary account name for remote document storage |
+| `CLOUDINARY_API_KEY` | API | unset | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | API | unset | Cloudinary API secret |
+| `VITE_API_BASE_URL` | Client | same origin | Base URL when the API is hosted separately |
+| `VITE_API_PROXY_TARGET` | Client | `http://localhost:5000` | Vite development proxy target |
 
-The client reads these optional build/development variables:
+For a separately hosted API, set `VITE_API_BASE_URL` before building the client. Use only the origin, without an `/api` suffix.
 
-- `VITE_API_BASE_URL`: API base URL for a separately hosted API. Leave unset for same-origin requests through the Vite proxy or a same-origin production deployment.
-- `VITE_API_PROXY_TARGET`: local Vite proxy target; defaults to `http://localhost:5000`.
+## Data and Storage
 
-For example, in PowerShell:
+The API initializes the database on startup. Records receive sequential IDs, and generated files are organized under `generated/offer-letters/` and `generated/certificates/`. Uploaded assets are stored under `uploads/`; database backups are stored under `database/backups/`.
 
-```powershell
-$env:VITE_API_PROXY_TARGET = 'http://localhost:5000'
-npm run dev
-```
+If a built-in template is unavailable, the generator uses a vector layout. A missing explicitly configured custom template returns an error.
 
-For a separate production API, set `VITE_API_BASE_URL` before building the client. Do not include a trailing path such as `/api`; the client adds endpoint paths itself.
+## Checks
 
-## Documents and Data
-
-Offer letters and certificates are generated as separate document requests and receive separate sequential IDs. The default local database is initialized on API startup. If a built-in template asset is unavailable, the generator uses a vector layout; a missing explicitly configured custom template remains an error.
-
-Generated PDFs are stored under `generated/offer-letters/` and `generated/certificates/`. Uploaded assets are stored under `uploads/`. Database backups are stored under `database/backups/` by default.
-
-## Checks and Reports
-
-From the repository root:
+Run these commands from the repository root:
 
 ```powershell
 npm run build --prefix client
 npm run lint --prefix client
 ```
 
-There is no automated test script in the package configuration. The manual browser/API journeys and their outcomes are recorded in [MANUAL_E2E_TEST_REPORT.md](MANUAL_E2E_TEST_REPORT.md); defect reproduction, causes, fixes, and verification are in [BUG_REPORT.md](BUG_REPORT.md).
+There is no automated test script in the package configuration. See [MANUAL_E2E_TEST_REPORT.md](MANUAL_E2E_TEST_REPORT.md) for user-flow testing outcomes and [BUG_REPORT.md](BUG_REPORT.md) for defect details and verification.
 
-Do not run `server/test-pdf.js` for checks that must not create PDFs. It increments the selected database's ID counter and writes generated test PDFs. The assessment QA left no PDF artifacts in the generated or template folders; those folders should contain only their `.gitkeep` placeholders.
+## Repository
+
+The assessment starter is `SyedSameer24/Certificate-Generation-Studio`. This checkout's origin is `gamepatt78/Certificate-Generation-Studio`; confirm it is the intended repository before submitting.
