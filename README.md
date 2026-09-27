@@ -88,11 +88,18 @@ If a custom template is missing, the app falls back to a vector-based layout ins
 
 The project initially had multiple frontend and backend issues. Each issue was investigated, fixed, and then validated through manual browser testing.
 
+### Frontend Issues
+
 | ID | Issue | Root cause | Fix |
 |---|---|---|---|
 | FE-01 | Dashboard stats showed false zero values | The dashboard initialized metric state to zero and did not handle failed stats requests | Added explicit unavailable handling and displayed “Unavailable” instead of misleading zeros |
 | FE-02 | Settings page crashed during save/backup | A missing import for the `RefreshCw` icon caused a `ReferenceError` | Added the missing icon import and kept the page interactive while loading |
 | FE-03 | Offer letters wrongly required certificate data | The validation schema and form UI applied certificate-only fields to both document types | Split validation by doc type and only show achievement fields for certificates |
+
+### Backend Issues
+
+| ID | Issue | Root cause | Fix |
+|---|---|---|---|
 | BE-01 | Backend failed before listening | The server used ES modules, but the Cloudinary service used CommonJS exports | Converted the service to ES-module syntax and made remote upload optional when credentials are missing |
 | BE-02 | `/api/records/stats` returned 500 | The stats route called an undefined helper | Imported the correct database helper and cleaned up unused variables |
 | BE-03 | Invalid generation requests produced 500s | Validation happened too late; malformed input reached duplicate checks and file logic | Added proper request-shape validation before duplicate checks and ID allocation |
@@ -168,5 +175,5 @@ The application is functioning correctly for the tested user flows:
 - backend startup and API requests are stable
 - missing templates and legacy DB issues are handled safely
 
-This README is the merged project summary, combining the defect log and manual E2E test outcomes into one clean report.
+This project summary brings together the defect analysis, the implemented fixes, and the manual E2E validation into one clear report for review.
 
