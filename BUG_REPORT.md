@@ -4,7 +4,9 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 
 ## Required Bugs
 
-### FE-01 — Failed dashboard stats appeared as zero
+**ID key:** `FE` = Frontend; `BE` = Backend/API. The six required findings are FE-01 through FE-03 and BE-01 through BE-03.
+
+### FE-01 — Frontend: Failed dashboard stats appeared as zero
 - **Bug ID:** FE-01
 - **Title:** Failed dashboard stats appeared as zero
 - **Area:** Frontend
@@ -16,7 +18,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added an explicit unavailable state and render `Unavailable` when stats cannot be fetched; successful responses clear that state.
 - **Verification:** With the backend offline, browser QA showed unavailable metrics rather than false zeroes. With the repaired API online, the cards showed the same counts as the records endpoint.
 
-### FE-02 — Settings crashed during save or backup loading
+### FE-02 — Frontend: Settings crashed during save or backup loading
 - **Bug ID:** FE-02
 - **Title:** Settings crashed during save or backup loading
 - **Area:** Frontend
@@ -28,7 +30,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added the missing icon import.
 - **Verification:** Triggered manual backup through the browser after the fix; the success toast appeared, Settings remained rendered, and no page error was recorded.
 
-### FE-03 — Offer letters required certificate-only information
+### FE-03 — Frontend: Offer letters required certificate-only information
 - **Bug ID:** FE-03
 - **Title:** Offer letters required certificate-only information
 - **Area:** Frontend
@@ -40,7 +42,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Create a schema based on `type`; require grade and achievement only for certificates and render those controls only in certificate mode.
 - **Verification:** In the browser, an offer became submittable without achievement text and no achievement control was shown. A certificate remained disabled until its achievement description was supplied.
 
-### BE-01 — Backend failed before listening
+### BE-01 — Backend/API: Backend failed before listening
 - **Bug ID:** BE-01
 - **Title:** Backend failed before listening
 - **Area:** Backend/API
@@ -52,7 +54,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Converted the service to ES-module import/export syntax and made remote upload optional when Cloudinary credentials are absent; local PDF generation remains available.
 - **Verification:** Imported the service successfully and started the backend against a temporary database; it reached the listening state.
 
-### BE-02 — Dashboard stats endpoint returned 500
+### BE-02 — Backend/API: Dashboard stats endpoint returned 500
 - **Bug ID:** BE-02
 - **Title:** Dashboard stats endpoint returned 500
 - **Area:** Backend/API
@@ -64,7 +66,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Imported the helper and removed unused stats variables.
 - **Verification:** On the isolated test database, the endpoint returned HTTP 200 with correct zero counts, then reflected newly generated offer and certificate records.
 
-### BE-03 — Invalid generation requests became server errors
+### BE-03 — Backend/API: Invalid generation requests became server errors
 - **Bug ID:** BE-03
 - **Title:** Invalid generation requests became server errors
 - **Area:** Backend/API
@@ -78,7 +80,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 
 ## Additional Findings
 
-### FE-A01 — Existing records had no usable PDF action
+### FE-A01 — Frontend: Existing records had no usable PDF action
 - **Bug ID:** FE-A01
 - **Title:** Dashboard download controls checked fields the API never returns
 - **Area:** Frontend
@@ -90,7 +92,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added one document-type-independent action using `/api/records/:id/download`.
 - **Verification:** Both offer and certificate rows displayed Download PDF; both download endpoints returned HTTP 200 and `application/pdf`.
 
-### FE-A02 — Client requests were pinned to localhost
+### FE-A02 — Frontend: Client requests were pinned to localhost
 - **Bug ID:** FE-A02
 - **Title:** API and PDF links could not target a separate deployment host
 - **Area:** Frontend
@@ -102,7 +104,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added `apiUrl()` using `VITE_API_BASE_URL` and a Vite development proxy configurable with `VITE_API_PROXY_TARGET`.
 - **Verification:** Browser requests went through the Vite `/api` proxy and generated PDF links remained same-origin; the client production build passed.
 
-### BE-A01 — Record inserts disagreed with the included SQLite schema
+### BE-A01 — Backend/API: Record inserts disagreed with the included SQLite schema
 - **Bug ID:** BE-A01
 - **Title:** Legacy record columns did not match the insert contract
 - **Area:** Backend/API
@@ -114,7 +116,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added idempotent column migrations, preserved existing rows, included `pdf_location` in inserts, and added an optional `DATABASE_PATH` for isolated environments.
 - **Verification:** Migrated a temporary copy of the committed DB; existing rows were preserved, required columns appeared, and a new row inserted successfully.
 
-### BE-A02 — One selected document request attempted to create both document types
+### BE-A02 — Backend/API: One selected document request attempted to create both document types
 - **Bug ID:** BE-A02
 - **Title:** Generation ignored the selected type and reused a unique intern ID
 - **Area:** Backend/API
@@ -126,7 +128,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** The route now validates and generates only the requested type and returns one `recordId` and `pdfUrl`.
 - **Verification:** An offer request created one offer row; a certificate request created one certificate row; both received distinct IDs and correct dashboard counts.
 
-### BE-A03 — Missing built-in templates blocked valid requests
+### BE-A03 — Backend/API: Missing built-in templates blocked valid requests
 - **Bug ID:** BE-A03
 - **Title:** Default template assets were absent from the clone
 - **Area:** Backend/API
@@ -138,7 +140,7 @@ Scope: reproducible frontend and backend defects found in the cloned repository.
 - **Fix:** Added a vector default layout when the built-in asset is absent; a missing explicitly configured custom template still returns an error.
 - **Verification:** Generated valid non-empty PDF buffers for offer and certificate previews using an isolated DB and no template files.
 
-### BE-A04 — Human-readable certificate durations became zero days
+### BE-A04 — Backend/API: Human-readable certificate durations became zero days
 - **Bug ID:** BE-A04
 - **Title:** Certificate duration conversion rejected values such as “3 Months”
 - **Area:** Backend/API
