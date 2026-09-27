@@ -1,4 +1,4 @@
-# STON Technology Document Generator
+# Document Generator
 
 Create internship offer letters and completion certificates, manage generated records, and verify credentials.
 
