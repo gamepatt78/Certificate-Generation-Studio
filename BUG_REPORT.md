@@ -1,4 +1,4 @@
-# STON Technology — Bug Report
+# Certificate Generation Studio — Bug Report
 
 Scope: reproducible frontend and backend defects found in the cloned repository. Six mandatory findings are listed first; additional defects found and fixed during the same investigation are separated below.
 

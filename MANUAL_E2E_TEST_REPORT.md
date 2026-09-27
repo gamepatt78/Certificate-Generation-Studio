@@ -1,4 +1,4 @@
-# STON Technology — Manual End-to-End Test Report
+# Certificate Generation Studio — Manual End-to-End Test Report
 
 **Date:** 2026-09-27
 **Application:** React/Vite client + Express API + SQLite

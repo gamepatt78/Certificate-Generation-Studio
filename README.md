@@ -1,4 +1,4 @@
-# STON Technology Document Generator
+# Certificate Generation Studio
 
 Create internship offer letters and completion certificates, manage generated records, and verify credentials.
 
